@@ -1,6 +1,19 @@
-function Header({ onOpenModal }) {
+function Header({ onOpenModal, onOpenAuth, onOpenProfile }) {
     try {
         const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+        const [user, setUser] = React.useState(null);
+
+        React.useEffect(() => {
+            setUser(authService.getCurrentUser());
+            
+            // Atualizar estado do usuário quando houver mudanças
+            const handleStorageChange = () => {
+                setUser(authService.getCurrentUser());
+            };
+            
+            window.addEventListener('storage', handleStorageChange);
+            return () => window.removeEventListener('storage', handleStorageChange);
+        }, []);
 
         const scrollToSection = (sectionId) => {
             const element = document.getElementById(sectionId);
@@ -8,6 +21,20 @@ function Header({ onOpenModal }) {
                 element.scrollIntoView({ behavior: 'smooth' });
             }
             setIsMenuOpen(false);
+        };
+
+        const handleOrderClick = () => {
+            const currentUser = authService.getCurrentUser();
+            if (currentUser) {
+                onOpenModal();
+            } else {
+                onOpenAuth();
+            }
+        };
+
+        const handleLogout = () => {
+            authService.logout();
+            setUser(null);
         };
 
         return (
@@ -27,19 +54,57 @@ function Header({ onOpenModal }) {
                             <button onClick={() => scrollToSection('contact')} className="text-gray-700 hover:text-blue-600 transition">Contato</button>
                         </nav>
 
-                        <button 
-                            onClick={onOpenModal}
-                            className="hidden md:block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-                        >
-                            Fazer Pedido
-                        </button>
+                        <div className="hidden md:flex items-center space-x-4">
+                            {user ? (
+                                <div className="flex items-center space-x-4">
+                                    <span className="text-gray-700">Olá, {user.objectData.name}</span>
+                                    <button 
+                                        onClick={handleOrderClick}
+                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                                    >
+                                        Fazer Pedido
+                                    </button>
+                                    <button 
+                                        onClick={onOpenProfile}
+                                        className="text-gray-700 hover:text-blue-600 transition"
+                                        title="Meu Perfil"
+                                    >
+                                        <i className="fas fa-user-circle text-xl"></i>
+                                    </button>
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="text-gray-700 hover:text-red-600 transition"
+                                        title="Sair"
+                                    >
+                                        <i className="fas fa-sign-out-alt"></i>
+                                    </button>
+                                </div>
+                            ) : (
+                                <button 
+                                    onClick={onOpenAuth}
+                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                                >
+                                    Entrar / Cadastrar
+                                </button>
+                            )}
+                        </div>
 
-                        <button 
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="md:hidden text-gray-700"
-                        >
-                            <i className="fas fa-bars text-xl"></i>
-                        </button>
+                        <div className="md:hidden flex items-center space-x-2">
+                            {user && (
+                                <button 
+                                    onClick={onOpenProfile}
+                                    className="text-gray-700 hover:text-blue-600 transition"
+                                >
+                                    <i className="fas fa-user-circle text-xl"></i>
+                                </button>
+                            )}
+                            <button 
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                className="text-gray-700"
+                            >
+                                <i className="fas fa-bars text-xl"></i>
+                            </button>
+                        </div>
                     </div>
 
                     {isMenuOpen && (
@@ -50,9 +115,24 @@ function Header({ onOpenModal }) {
                                 <button onClick={() => scrollToSection('pricing')} className="text-gray-700 text-left">Preços</button>
                                 <button onClick={() => scrollToSection('about')} className="text-gray-700 text-left">Sobre</button>
                                 <button onClick={() => scrollToSection('contact')} className="text-gray-700 text-left">Contato</button>
-                                <button onClick={onOpenModal} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-left">
-                                    Fazer Pedido
-                                </button>
+                                {user ? (
+                                    <div className="flex flex-col space-y-2">
+                                        <span className="text-gray-700">Olá, {user.objectData.name}</span>
+                                        <button onClick={handleOrderClick} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-left">
+                                            Fazer Pedido
+                                        </button>
+                                        <button onClick={onOpenProfile} className="text-blue-600 text-left">
+                                            Meu Perfil
+                                        </button>
+                                        <button onClick={handleLogout} className="text-red-600 text-left">
+                                            Sair
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button onClick={onOpenAuth} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-left">
+                                        Entrar / Cadastrar
+                                    </button>
+                                )}
                             </nav>
                         </div>
                     )}
